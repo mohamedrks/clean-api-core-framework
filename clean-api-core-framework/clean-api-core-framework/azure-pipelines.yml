@@ -33,12 +33,16 @@ stages:
         regionName: '$(awsRegion)'
         scriptType: 'inline'
         inlineScript: |
+
+          echo "=== Current Directory Listing ==="
+          ls -la
+
           # Login to ECR
           aws ecr get-login-password --region $(awsRegion) | docker login --username AWS --password-stdin $(awsEcrRepo)
           
           # Build Docker Image
-          # cd clean-api-core-framework
-          # docker build -t $(awsEcrRepo):$(tag) .
+          cd clean-api-core-framework
+          docker build -t $(awsEcrRepo):$(tag) .
           
           # Push Docker Image
           # docker push $(awsEcrRepo):$(tag)
@@ -64,10 +68,10 @@ stages:
     #     AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
     
     # Build Docker Image
-    - script: |
-        docker build -t $(awsEcrRepo):$(tag) .
-      displayName: 'Build Docker Image'
-      workingDirectory: 'clean-api-core-framework'
+    # - script: |
+    #     docker build -t $(awsEcrRepo):$(tag) .
+    #   displayName: 'Build Docker Image'
+    #   workingDirectory: 'clean-api-core-framework'
     
     # Push Docker Image
     - script: |
