@@ -34,10 +34,9 @@ stages:
       inputs:
         awsCredentials: 'aws-ecr-connection'  # Azure DevOps service connection
         regionName: '$(awsRegion)'
-        awsCommand: 'ecr get-login-password'
+        awsCommand: 'ecr'
+        awsSubCommand: 'get-login-password'
         outputVariable: 'ecrPassword'
-        command: 'ecr'
-        arguments: 'get-login-password --region $(awsRegion) | docker login --username AWS --password-stdin $(awsEcrRepo)'
 
     - script: |
         echo $(ecrPassword) | docker login --username AWS --password-stdin $(awsEcrRepo)
