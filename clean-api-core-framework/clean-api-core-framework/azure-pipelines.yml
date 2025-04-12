@@ -5,9 +5,9 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  dockerRegistryServiceConnection: '<your-service-connection-name>'
-  imageRepository: '<your-dockerhub-or-ecr-repository>'
-  containerRegistry: '<your-dockerhub-username-or-ecr-registry>'
+  dockerRegistryServiceConnection: 'aws-ecr-connection'
+  imageRepository: 'clean-api-core-framework'
+  containerRegistry: '463657084111.dkr.ecr.us-east-1.amazonaws.com/clean-api-core-framework'
   tag: '$(Build.BuildId)'
 
 stages:
