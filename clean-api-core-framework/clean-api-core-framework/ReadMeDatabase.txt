@@ -1,0 +1,2 @@
+﻿﻿1. When you do critical operations like payment or file upload, you need to make sure that the operation is not repeated multiple times. So you need to make sure that the operation is idempotent.
+ 2. When you do multiple commits to the database , consider using transaction and rollout if everything went well otherwise rollback the commits.
