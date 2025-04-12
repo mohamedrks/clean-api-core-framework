@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Domain.Entities
 {
+    // Product entity representing a product in the system
     public class Product
     {
         public int Id { get; set; }
