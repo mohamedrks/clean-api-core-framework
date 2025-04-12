@@ -1,14 +1,11 @@
 ﻿trigger:
 - main
-
 pool:
   vmImage: 'ubuntu-latest'
-
 variables:
   awsRegion: 'us-east-1'
-  awsEcrRepo: '463657084111.dkr.ecr.us-east-1.amazonaws.com/clean-api-core-framework' # Make account ID and region secure and store in Azure DevOps variable group
+  awsEcrRepo: '463657084111.dkr.ecr.us-east-1.amazonaws.com/clean-api-core-framework'
   tag: '$(Build.BuildId)'
-
 stages:
 - stage: Build
   displayName: Build and Push Docker Image
@@ -22,34 +19,35 @@ stages:
         packageType: 'sdk'
         version: '8.x'
         installationPath: $(Agent.ToolsDirectory)/dotnet
-
     - script: |
         dotnet build --configuration Release
       displayName: 'Build .NET Project'
       workingDirectory: 'clean-api-core-framework'
-
-    # Login to AWS ECR
+    
+    # Login to AWS ECR - Using a different approach
     - task: AWSCLI@1
-      displayName: 'Get AWS ECR Login Password'
+      displayName: 'Login to AWS ECR'
       inputs:
         awsCredentials: 'aws-ecr-connection'  # Azure DevOps service connection
         regionName: '$(awsRegion)'
         awsCommand: 'ecr'
         awsSubCommand: 'get-login-password'
-        outputVariable: 'ecrPassword'
-
-    # Docker Login to AWS ECR
+        awsArguments: '--region $(awsRegion)'
+    
+    # Use AWS CLI directly to login to ECR
     - script: |
-        docker logout $(awsEcrRepo) || true  # Logout any previous sessions
-        echo "$(ecrPassword)" | docker login --username AWS --password-stdin $(awsEcrRepo)
-      displayName: 'Docker Login to AWS ECR'
-
+        aws ecr get-login-password --region $(awsRegion) | docker login --username AWS --password-stdin $(awsEcrRepo)
+      displayName: 'Docker Login to ECR'
+      env:
+        AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+        AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+    
     # Build Docker Image
     - script: |
         docker build -t $(awsEcrRepo):$(tag) .
       displayName: 'Build Docker Image'
       workingDirectory: 'clean-api-core-framework'
-
+    
     # Push Docker Image
     - script: |
         docker push $(awsEcrRepo):$(tag)
