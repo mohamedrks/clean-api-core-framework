@@ -26,7 +26,7 @@ stages:
     - script: |
         dotnet build --configuration Release
       displayName: 'Build .NET Project'
-      workingDirectory: '/src/clean-api-core-framework/clean-api-core-framework'
+      workingDirectory: 'clean-api-core-framework'
 
     # Login to AWS ECR
     - task: AWSCLI@1
