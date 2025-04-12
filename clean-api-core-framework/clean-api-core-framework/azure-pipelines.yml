@@ -41,7 +41,7 @@ stages:
           aws ecr get-login-password --region $(awsRegion) | docker login --username AWS --password-stdin $(awsEcrRepo)
           
           # Build Docker Image
-          cd clean-api-core-framework
+          cd clean-api-core-framework/clean-api-core-framework
           echo "=== Current inside Directory Listing ==="
           ls -la
           docker build -t $(awsEcrRepo):$(tag) .
