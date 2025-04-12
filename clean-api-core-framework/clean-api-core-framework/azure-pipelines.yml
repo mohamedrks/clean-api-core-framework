@@ -5,9 +5,8 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  dockerRegistryServiceConnection: 'aws-ecr-connection'
-  imageRepository: 'clean-api-core-framework'
-  containerRegistry: '463657084111.dkr.ecr.us-east-1.amazonaws.com/clean-api-core-framework'
+  awsRegion: 'us-east-1'
+  awsEcrRepo: '463657084111.dkr.ecr.us-east-1.amazonaws.com/clean-api-core-framework'
   tag: '$(Build.BuildId)'
 
 stages:
@@ -28,19 +27,21 @@ stages:
         dotnet build --configuration Release
       displayName: 'Build .NET Project'
 
-    - task: Docker@2
-      displayName: 'Build Docker Image'
+    # Login to AWS ECR
+    - task: AWSCLI@1
+      displayName: 'Login to AWS ECR'
       inputs:
-        command: 'build'
-        Dockerfile: '**/Dockerfile'
-        tags: |
-          $(tag)
+        awsCredentials: 'aws-ecr-connection'  # Azure DevOps service connection
+        regionName: '$(awsRegion)'
+        command: 'ecr'
+        arguments: 'get-login-password --region $(awsRegion) | docker login --username AWS --password-stdin $(awsEcrRepo)'
 
-    - task: Docker@2
-      displayName: 'Push Docker Image'
-      inputs:
-        command: 'push'
-        containerRegistry: $(dockerRegistryServiceConnection)
-        repository: $(imageRepository)
-        tags: |
-          $(tag)
+    # Build Docker Image
+    - script: |
+        docker build -t $(awsEcrRepo):$(tag) .
+      displayName: 'Build Docker Image'
+
+    # Push Docker Image
+    - script: |
+        docker push $(awsEcrRepo):$(tag)
+      displayName: 'Push Docker Image to ECR'
