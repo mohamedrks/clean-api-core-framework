@@ -2,6 +2,7 @@
 
 namespace APICoreFramework.Middlewares
 {
+    // The class is responsible for handling idempotency in HTTP requests.
     public class IdempotencyMiddleware
     {
         private readonly RequestDelegate _next;
