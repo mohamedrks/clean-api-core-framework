@@ -39,9 +39,11 @@ stages:
         outputVariable: 'ecrPassword'
 
     - script: |
-        docker --version
-        docker login --username AWS --password-stdin $(awsEcrRepo) <<< "$(ecrPassword)"
+        echo "Password: $(ecrPassword)"
+        echo "$(ecrPassword)" | docker login --username AWS --password-stdin $(awsEcrRepo)
       displayName: 'Docker Login to AWS ECR'
+      env:
+        ecrPassword: $(ecrPassword)
 
     # Build Docker Image
     - script: |
