@@ -24,23 +24,44 @@ stages:
       displayName: 'Build .NET Project'
       workingDirectory: 'clean-api-core-framework'
     
-    # Login to AWS ECR - Using a different approach
-    - task: AWSCLI@1
-      displayName: 'Login to AWS ECR'
+
+    # Use AWS CLI task to configure AWS credentials
+    - task: AWSShellScript@1
+      displayName: 'Configure AWS Credentials'
       inputs:
-        awsCredentials: 'aws-ecr-connection'  # Azure DevOps service connection
+        awsCredentials: 'aws-ecr-connection'  # Your AWS service connection
         regionName: '$(awsRegion)'
-        awsCommand: 'ecr'
-        awsSubCommand: 'get-login-password'
-        awsArguments: '--region $(awsRegion)'
+        scriptType: 'inline'
+        inlineScript: |
+          # Login to ECR
+          aws ecr get-login-password --region $(awsRegion) | docker login --username AWS --password-stdin $(awsEcrRepo)
+          
+          # Build Docker Image
+          # cd clean-api-core-framework
+          # docker build -t $(awsEcrRepo):$(tag) .
+          
+          # Push Docker Image
+          # docker push $(awsEcrRepo):$(tag)
+
+
+    # Login to AWS ECR - Using a different approach
+    # - task: AWSCLI@1
+    #   displayName: 'Login to AWS ECR'
+    #   inputs:
+    #     awsCredentials: 'aws-ecr-connection'  
+        # Azure DevOps service connection
+        # regionName: '$(awsRegion)'
+        # awsCommand: 'ecr'
+        # awsSubCommand: 'get-login-password'
+        # awsArguments: '--region $(awsRegion)'
     
     # Use AWS CLI directly to login to ECR
-    - script: |
-        aws ecr get-login-password --region $(awsRegion) | docker login --username AWS --password-stdin $(awsEcrRepo)
-      displayName: 'Docker Login to ECR'
-      env:
-        AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
-        AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+    # - script: |
+    #     aws ecr get-login-password --region $(awsRegion) | docker login --username AWS --password-stdin $(awsEcrRepo)
+    #   displayName: 'Docker Login to ECR'
+    #   env:
+    #     AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+    #     AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
     
     # Build Docker Image
     - script: |
