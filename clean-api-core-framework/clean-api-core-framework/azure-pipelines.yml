@@ -38,11 +38,11 @@ stages:
         awsSubCommand: 'get-login-password'
         outputVariable: 'ecrPassword'
 
+    # Docker Login to AWS ECR
     - script: |
+        docker logout $(awsEcrRepo) || true  # Logout any previous sessions
         echo "$(ecrPassword)" | docker login --username AWS --password-stdin $(awsEcrRepo)
       displayName: 'Docker Login to AWS ECR'
-      env:
-        ecrPassword: $(ecrPassword)
 
     # Build Docker Image
     - script: |
