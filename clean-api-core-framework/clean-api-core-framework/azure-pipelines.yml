@@ -6,7 +6,7 @@ pool:
 
 variables:
   awsRegion: 'us-east-1'
-  awsEcrRepo: '463657084111.dkr.ecr.us-east-1.amazonaws.com/clean-api-core-framework'
+  awsEcrRepo: '463657084111.dkr.ecr.us-east-1.amazonaws.com/clean-api-core-framework' # Make account ID and region secure and store in Azure DevOps variable group
   tag: '$(Build.BuildId)'
 
 stages:
