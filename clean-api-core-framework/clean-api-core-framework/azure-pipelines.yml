@@ -47,7 +47,7 @@ stages:
           docker build -t $(awsEcrRepo):$(tag) .
           
           # Push Docker Image
-          # docker push $(awsEcrRepo):$(tag)
+          docker push $(awsEcrRepo):$(tag)
 
 
     # Login to AWS ECR - Using a different approach
@@ -76,6 +76,6 @@ stages:
     #   workingDirectory: 'clean-api-core-framework'
     
     # Push Docker Image
-    - script: |
-        docker push $(awsEcrRepo):$(tag)
-      displayName: 'Push Docker Image to ECR'
+    # - script: |
+    #     docker push $(awsEcrRepo):$(tag)
+    #   displayName: 'Push Docker Image to ECR'
