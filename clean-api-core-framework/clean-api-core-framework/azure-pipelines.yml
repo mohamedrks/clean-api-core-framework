@@ -29,13 +29,20 @@ stages:
       workingDirectory: 'clean-api-core-framework'
 
     # Login to AWS ECR
+    - task: AWSCLI@1
+      displayName: 'Get AWS ECR Login Password'
+      inputs:
+        awsCredentials: 'aws-ecr-connection'  # Azure DevOps service connection
+        regionName: '$(awsRegion)'
+        awsCommand: 'ecr'
+        awsSubCommand: 'get-login-password'
+        outputVariable: 'ecrPassword'
+
     - script: |
-        echo "Logging into AWS ECR..."
-        aws ecr get-login-password --region $(awsRegion) | docker login --username AWS --password-stdin $(awsEcrRepo)
-      displayName: 'Login to AWS ECR'
+        echo "$ECR_PASSWORD" | docker login --username AWS --password-stdin $(awsEcrRepo)
+      displayName: 'Docker Login to AWS ECR'
       env:
-        AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
-        AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+        ECR_PASSWORD: $(ecrPassword)
 
     # Build Docker Image
     - script: |
