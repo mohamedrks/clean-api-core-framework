@@ -31,3 +31,31 @@
  10. Add API gateway -
  
  11. Do all the testings - Load est , stress test , spike test , soak test.
+
+
+ 12. Protect the database string for local development 
+
+     Make sure project has     <UserSecretsId>7177a941-12db-49dc-b946-19*****c4a73</UserSecretsId> (Not sure about this )
+
+     Move the current path on terminal to the project folder - C:\Users\user\source\repos\clean-api-core-framework\clean-api-core-framework\clean-api-core-framework
+     
+     Run the command to init the secret - dotnet user-secrets init
+     
+     Run the command to add the secret - dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost;Database=CleanApiDb;User Id=sa;Password=yourStrong(!)Password;"
+     
+     In My case - dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost\SQLEXPRESS; Database=AlphaDairy; Trusted_Connection=true; Trust Server Certificate=true; MultipleActiveResultSets=true; Integrated 	Security=true;"
+     
+     Run the command to get the secret - dotnet user-secrets list
+     
+     Run the command to remove the secret - dotnet user-secrets remove "ConnectionStrings:DefaultConnection"
+     
+     Run the command to remove all the secrets - dotnet user-secrets clear
+
+
+     Path where it's stored locally:
+        For reference, the secrets are stored as a JSON file in:
+
+        Windows: %APPDATA%\Microsoft\UserSecrets\<userSecretsId>\secrets.json
+
+        Linux/macOS: ~/.microsoft/usersecrets/<userSecretsId>/secrets.json
+

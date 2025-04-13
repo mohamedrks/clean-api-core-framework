@@ -2,7 +2,10 @@ using APICoreFramework.Middlewares;
 using Application.Common;
 using Application.Interfaces;
 using Application.Products.Commands;
+using clean_api_core_framework.Middlewares;
 using Infrastructure.Services;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Persistence.Context;
 using Persistence.Repositories;
@@ -16,9 +19,22 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Add secrets only in development
+if (builder.Environment.IsDevelopment())
+{
+    builder.Configuration.AddUserSecrets<Program>();
+}
+
+// Now you can access it like this:
+//var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
 // Register ApplicationDbContext (Persistence Layer) with Application Interface (Application Layer)
-builder.Services.AddDbContext<IApplicationDbContext, ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddDbContext<IApplicationDbContext, ApplicationDbContext>((provider, options) =>
+{
+    var config = provider.GetRequiredService<IConfiguration>();
+    var connectionString = config.GetConnectionString("DefaultConnection");
+    options.UseSqlServer(connectionString);
+});
 
 // Register common services
 builder.Services.AddScoped<IFileProcessingHandler, FileProcessingHandler>();
@@ -38,19 +54,48 @@ builder.Services.AddMediatR(cfg =>
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
 builder.Services.AddControllers();
 
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState
+            .Where(e => e.Value.Errors.Count > 0)
+            .Select(e => new
+            {
+                Field = e.Key,
+                Error = e.Value.Errors.First().ErrorMessage
+            });
+
+        return new BadRequestObjectResult(new { message = "Validation failed", errors });
+    };
+});
+
 // Build the app after all services are registered.
 var app = builder.Build();
 
-
-using (var scope = app.Services.CreateScope())
+if (builder.Environment.IsDevelopment())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-    if (!dbContext.Database.CanConnect())
+    using (var scope = app.Services.CreateScope())
     {
-        throw new Exception("Database connection failed.");
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        try
+        {
+            dbContext.Database.OpenConnection();
+            Console.WriteLine("Connection successful.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Connection failed:");
+            Console.WriteLine(ex.Message);
+            throw;
+        }
+        if (!dbContext.Database.CanConnect())
+        {
+            throw new Exception("Database connection failed.");
+        }
     }
 }
+
 
 
 // Seed the database with initial data
@@ -81,13 +126,13 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseExceptionHandler("/error");
 
 app.UseAuthorization();
 
 // Use the custom middleware for idempotency
 app.UseMiddleware<IdempotencyMiddleware>();
-// Use the custom middleware for error handling
-//app.UseMiddleware<ErrorHandlingMiddleware>();
+app.UseMiddleware<ExceptionMiddleware>();
 // Use the custom middleware for logging
 //app.UseMiddleware<LoggingMiddleware>();
 // Use the custom middleware for performance monitoring
@@ -110,7 +155,11 @@ app.UseMiddleware<IdempotencyMiddleware>();
 //app.UseMiddleware<CorsMiddleware>();
 // Use the custom middleware for security headers
 //app.UseMiddleware<SecurityHeadersMiddleware>();
-
+app.Map("/error", (HttpContext context) =>
+{
+    var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+    return Results.Problem("Something went wrong.");
+});
 app.MapControllers();
 
 app.Run();

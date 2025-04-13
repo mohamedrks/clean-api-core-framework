@@ -1,6 +1,4 @@
-﻿using Application.Common;
-using Application.DTOs;
-using Application.Interfaces;
+﻿using Application.Interfaces;
 using AutoMapper;
 using Domain.Entities;
 using MediatR;
