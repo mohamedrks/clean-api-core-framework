@@ -16,9 +16,22 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Add secrets only in development
+if (builder.Environment.IsDevelopment())
+{
+    builder.Configuration.AddUserSecrets<Program>();
+}
+
+// Now you can access it like this:
+//var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
 // Register ApplicationDbContext (Persistence Layer) with Application Interface (Application Layer)
-builder.Services.AddDbContext<IApplicationDbContext, ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddDbContext<IApplicationDbContext, ApplicationDbContext>((provider, options) =>
+{
+    var config = provider.GetRequiredService<IConfiguration>();
+    var connectionString = config.GetConnectionString("DefaultConnection");
+    options.UseSqlServer(connectionString);
+});
 
 // Register common services
 builder.Services.AddScoped<IFileProcessingHandler, FileProcessingHandler>();
@@ -41,14 +54,26 @@ builder.Services.AddControllers();
 // Build the app after all services are registered.
 var app = builder.Build();
 
-
-using (var scope = app.Services.CreateScope())
+if (builder.Environment.IsDevelopment())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-    if (!dbContext.Database.CanConnect())
+    using (var scope = app.Services.CreateScope())
     {
-        throw new Exception("Database connection failed.");
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        try
+        {
+            dbContext.Database.OpenConnection();
+            Console.WriteLine("Connection successful.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Connection failed:");
+            Console.WriteLine(ex.Message);
+            throw;
+        }
+        if (!dbContext.Database.CanConnect())
+        {
+            throw new Exception("Database connection failed.");
+        }
     }
 }
 
