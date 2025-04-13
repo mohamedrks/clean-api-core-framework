@@ -2,7 +2,10 @@ using APICoreFramework.Middlewares;
 using Application.Common;
 using Application.Interfaces;
 using Application.Products.Commands;
+using clean_api_core_framework.Middlewares;
 using Infrastructure.Services;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Persistence.Context;
 using Persistence.Repositories;
@@ -51,6 +54,22 @@ builder.Services.AddMediatR(cfg =>
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
 builder.Services.AddControllers();
 
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState
+            .Where(e => e.Value.Errors.Count > 0)
+            .Select(e => new
+            {
+                Field = e.Key,
+                Error = e.Value.Errors.First().ErrorMessage
+            });
+
+        return new BadRequestObjectResult(new { message = "Validation failed", errors });
+    };
+});
+
 // Build the app after all services are registered.
 var app = builder.Build();
 
@@ -76,6 +95,7 @@ if (builder.Environment.IsDevelopment())
         }
     }
 }
+
 
 
 // Seed the database with initial data
@@ -106,13 +126,13 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseExceptionHandler("/error");
 
 app.UseAuthorization();
 
 // Use the custom middleware for idempotency
 app.UseMiddleware<IdempotencyMiddleware>();
-// Use the custom middleware for error handling
-//app.UseMiddleware<ErrorHandlingMiddleware>();
+app.UseMiddleware<ExceptionMiddleware>();
 // Use the custom middleware for logging
 //app.UseMiddleware<LoggingMiddleware>();
 // Use the custom middleware for performance monitoring
@@ -135,7 +155,11 @@ app.UseMiddleware<IdempotencyMiddleware>();
 //app.UseMiddleware<CorsMiddleware>();
 // Use the custom middleware for security headers
 //app.UseMiddleware<SecurityHeadersMiddleware>();
-
+app.Map("/error", (HttpContext context) =>
+{
+    var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+    return Results.Problem("Something went wrong.");
+});
 app.MapControllers();
 
 app.Run();

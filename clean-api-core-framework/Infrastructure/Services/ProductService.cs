@@ -19,17 +19,25 @@ namespace Infrastructure.Services
 
         public async Task<int> CreateProductAsync(ProductCreateDto dto, CancellationToken cancellationToken)
         {
-            // Convert ProductCreateDto to CreateProductCommand
-            var command = new CreateProductCommand
+            try
             {
-                Name = dto.Name,
-                Price = dto.Price,
-                Description = dto.Description,
-                Image = dto.Image
-            };
+                // Convert ProductCreateDto to CreateProductCommand
+                var command = new CreateProductCommand
+                {
+                    Name = dto.Name,
+                    Price = dto.Price,
+                    Description = dto.Description,
+                    Image = dto.Image
+                };
 
-            // Call the handler with the command
-            return await _mediator.Send(command, cancellationToken);
+                // Call the handler with the command
+                return await _mediator.Send(command, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception or handle it as needed
+                throw new ApplicationException(ex.Message);
+            }
         }
 
         public Task<IEnumerable<ProductCreateDto>> GetAllProductsAsync(CancellationToken cancellationToken)
