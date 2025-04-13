@@ -1,15 +1,11 @@
 trigger:
 - main
-
 pool:
   vmImage: 'ubuntu-latest'
-
 variables:
-  dockerRegistryServiceConnection: 'aws-ecr-connection'
-  imageRepository: 'clean-api-core-framework'
-  containerRegistry: '463657084111.dkr.ecr.us-east-1.amazonaws.com/clean-api-core-framework'
+  awsRegion: 'us-east-1'
+  awsEcrRepo: '463657084111.dkr.ecr.us-east-1.amazonaws.com/clean-api-core-framework'
   tag: '$(Build.BuildId)'
-
 stages:
 - stage: Build
   displayName: Build and Push Docker Image
@@ -23,24 +19,63 @@ stages:
         packageType: 'sdk'
         version: '8.x'
         installationPath: $(Agent.ToolsDirectory)/dotnet
-
     - script: |
         dotnet build --configuration Release
       displayName: 'Build .NET Project'
+      workingDirectory: 'clean-api-core-framework'
+    
 
-    - task: Docker@2
+    # Use AWS CLI task to configure AWS credentials
+    - task: AWSShellScript@1
+      displayName: 'Configure AWS Credentials'
+      inputs:
+        awsCredentials: 'aws-ecr-connection'  # Your AWS service connection
+        regionName: '$(awsRegion)'
+        scriptType: 'inline'
+        inlineScript: |
+
+          echo "=== Current Directory Listing ==="
+          ls -la
+
+          # Login to ECR
+          aws ecr get-login-password --region $(awsRegion) | docker login --username AWS --password-stdin $(awsEcrRepo)
+          
+          # Build Docker Image
+          # cd clean-api-core-framework
+          # echo "=== Current inside Directory Listing ==="
+          # ls -la
+          # docker build -t $(awsEcrRepo):$(tag) .
+          
+          # Push Docker Image
+          # docker push $(awsEcrRepo):$(tag)
+
+
+    # Login to AWS ECR - Using a different approach
+    # - task: AWSCLI@1
+    #   displayName: 'Login to AWS ECR'
+    #   inputs:
+    #     awsCredentials: 'aws-ecr-connection'  
+        # Azure DevOps service connection
+        # regionName: '$(awsRegion)'
+        # awsCommand: 'ecr'
+        # awsSubCommand: 'get-login-password'
+        # awsArguments: '--region $(awsRegion)'
+    
+    # Use AWS CLI directly to login to ECR
+    # - script: |
+    #     aws ecr get-login-password --region $(awsRegion) | docker login --username AWS --password-stdin $(awsEcrRepo)
+    #   displayName: 'Docker Login to ECR'
+    #   env:
+    #     AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+    #     AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+    
+    # Build Docker Image
+    - script: |
+        docker build -t $(awsEcrRepo):$(tag) .
       displayName: 'Build Docker Image'
-      inputs:
-        command: 'build'
-        Dockerfile: '**/Dockerfile'
-        tags: |
-          $(tag)
-
-    - task: Docker@2
-      displayName: 'Push Docker Image'
-      inputs:
-        command: 'push'
-        containerRegistry: $(dockerRegistryServiceConnection)
-        repository: $(imageRepository)
-        tags: |
-          $(tag)
+      workingDirectory: 'clean-api-core-framework'
+    
+    # Push Docker Image
+    - script: |
+        docker push $(awsEcrRepo):$(tag)
+      displayName: 'Push Docker Image to ECR'
